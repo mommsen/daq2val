@@ -1,10 +1,10 @@
 from daq2Utils import printError
 
 ######################################################################
-FEDIDS    = [600 + n for n in range(96)]
-FEDID0 = 600
-MAXSTREAMS = 1024
-def fedIdGenerator(maxstreams, startid=600):
+FEDIDS    = [1 + n for n in range(96)]
+FEDID0 = 1
+MAXSTREAMS = 4096
+def fedIdGenerator(maxstreams, startid=1):
 	for fedid in xrange(startid, startid+maxstreams):
 		yield fedid
 
@@ -110,6 +110,21 @@ class FRLProdNode(FRLNode):
 		return self.sourceIp
 	def getSlotNumber(self, index):
 		return self.slotNumber
+
+######################################################################
+class FRLDummyNode(FRLNode):
+	def __init__(self, index, nstreams=2):
+		self.index = index
+		self.rack = None
+		self.nstreams = nstreams
+
+		self.sourceIp   = None
+		self.slotNumber = self.getSlotNumber(index)
+		self.fedIds     = self.getFedIds()
+
+		self.ruindex = -1
+	def getSourceIp(self, index):
+		return self.sourceIp
 
 ######################################################################
 class RUNode(object):

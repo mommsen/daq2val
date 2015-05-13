@@ -14,7 +14,7 @@ from xml.etree.ElementTree import QName as QN
 from xml.parsers.expat import ExpatError
 
 from daq2Utils import printError, printProgress
-from daq2FEDConfiguration import daq2ProdFEDConfiguration, FRLNode, RUNode
+from daq2FEDConfiguration import daq2ProdFEDConfiguration, FRLNode, FRLDummyNode, RUNode
 from daq2Configurator import elementFromFile, addFragmentFromFile
 from daq2Configurator import RU_STARTING_TID, BU_STARTING_TID
 from daq2Configurator import FEROL_OPERATION_MODES
@@ -32,7 +32,7 @@ class daq2ProdConfigurator(daq2Configurator):
 
 ---------------------------------------------------------------------
 '''
-	def __init__(self, fragmentdir, hwInfo, canonical=0,
+	def __init__(self, fragmentdir, hwInfo, canonical=0, localInput=False,
 		         dry=False, verbose=5):
 		super(daq2ProdConfigurator, self).__init__(fragmentdir,
 			                                       verbose=verbose)
@@ -41,6 +41,7 @@ class daq2ProdConfigurator(daq2Configurator):
 		# self.symbMap = symbMap ## can get this info also from hwInfo?
 
 		self.canonical = canonical
+		self.localInput = localInput
 		self.dry = dry
 
 		self.dropAtRU = False
@@ -67,7 +68,7 @@ class daq2ProdConfigurator(daq2Configurator):
 			                evminst=self.allRUs[0].index)
 
 		## add the EVM
-		self.config.append(self.makeRU(ru, dropAtRU=self.dropAtRU,
+		self.config.append(self.makeRU(ru, dropAtRU=self.dropAtRU, localInput=self.localInput,
 			                               isEVM=True))
 		for index in ru_instances:
 			self.addRUContextWithIBEndpoint(index)
@@ -81,7 +82,7 @@ class daq2ProdConfigurator(daq2Configurator):
 		self.addI2OProtocol(rus_to_add=[ru.index],
 			                evminst=self.allRUs[0].index)
 
-		self.config.append(self.makeRU(ru, dropAtRU=self.dropAtRU))
+		self.config.append(self.makeRU(ru, dropAtRU=self.dropAtRU, localInput=self.localInput))
 		self.addRUContextWithIBEndpoint(self.allRUs[0].index, isEVM=True)
 		for index in xrange(self.nbus):
 			self.addBUContextWithIBEndpoint(index)
@@ -108,7 +109,7 @@ class daq2ProdConfigurator(daq2Configurator):
 		for ru in self.allRUs:
 			isevm = False
 			if ru.index == 0: isevm = True
-			self.config.append(self.makeRU(ru, isEVM=isevm))
+			self.config.append(self.makeRU(ru, dropAtRU=self.dropAtRU, localInput=self.localInput, isEVM=isevm))
 
 		for index in xrange(self.nbus):
 			self.config.append(self.makeBU(index))
@@ -140,6 +141,7 @@ class daq2ProdConfigurator(daq2Configurator):
 				print 'unused FEROL:', f
 			for r in rus_gen:
 				print 'unused RU:', r
+
 	def assignEVM(self, rus_gen, frlpcs):
 		if self.haveEVM: return True
 		for frlpc in frlpcs:
@@ -158,8 +160,26 @@ class daq2ProdConfigurator(daq2Configurator):
 				return True
 		return False
 
+	def fillAllRUs(self, geswitches):
+		for switchname in geswitches:
+			runames = self.hwInfo.getAllRUs(switchname)
+			for runame in runames:
+				if not self.haveEVM:
+					self.haveEVM = True
+					runode = RUNode(0, hostname=runame)
+					ferol = FRLDummyNode(0,1)
+					runode.addFRL(ferol)
+				else:
+					runode = RUNode(self.ruindex, hostname=runame)
+					for x in range(0, 8):
+						ferol = FRLDummyNode(self.ferolindex,2)
+						runode.addFRL(ferol)
+						self.ferolindex += 1
+					self.ruindex += 1
 
-	def makeConfigs(self, geswitches):
+				self.allRUs.append(runode)
+
+	def fillRUsFromFRL(self, geswitches):
 		if self.canonical == 1:
 			minFRLs = 8
 			minFEDIDs = 8
@@ -232,18 +252,29 @@ class daq2ProdConfigurator(daq2Configurator):
 			self.assignFEROLsToRUs(RU_gen, FEROLs_onswitch,
 				                   nRUs=len(RUs_onswitch))
 
+	def makeConfigs(self, geswitches):
+		if self.localInput:
+			self.fillAllRUs(geswitches)
+		else:
+			self.fillRUsFromFRL(geswitches)
+
 		if not self.haveEVM:
 			printError("Failed to add EVM!", self)
 			raise RuntimeError("No EVM!")
 
 		## Remove unused RUs
 		usedRUs = []
+		ruCount = 0
 		for r in self.allRUs:
-			if len(r.getFedIds()) != 0:
+			if r.frls and ruCount < self.nrus+1:
+				ruCount += 1
 				if r.index == 0:
 					usedRUs.insert(0,r)
 				else:
 					usedRUs.append(r)
+			else:
+				for f in r.frls:
+					f.ruindex = -1
 		self.allRUs = usedRUs
 
 		## Remove unused FEROLs

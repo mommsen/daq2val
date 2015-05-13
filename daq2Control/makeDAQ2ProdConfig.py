@@ -17,7 +17,10 @@ if __name__ == "__main__":
 	usage = """[prog] """
 	parser = OptionParser(usage=usage)
 	addConfiguratorOptions(parser)
-	parser.add_option("--nBUs", default=40, action="store", type="int",
+	parser.add_option("--nRUs", default=44, action="store", type="int",
+		               dest="nRUs",
+		               help=("Number of RUs [default: %default]"))
+	parser.add_option("--nBUs", default=44, action="store", type="int",
 		               dest="nBUs",
 		               help=("Number of BUs [default: %default]"))
 	parser.add_option("--ibInventoryFile",
@@ -54,6 +57,9 @@ if __name__ == "__main__":
 		               	     "0 is non canonical, 1 is 8 streams per RU, "
 		               	     "2 is 16 streams per RU, 3 is 8 streams with the same RUs as in 2."
 		               	     "[default: non canonical]"))
+	parser.add_option("--localInput", default=False,
+		               action="store_true", dest="localInput",
+		               help=("Generate the data locally on the RU"))
 	parser.add_option("-d", "--dry", default=False,
 		               action="store_true", dest="dry",
 		               help=("Just print the assignments without writing "
@@ -75,6 +81,9 @@ if __name__ == "__main__":
 
 
 	ruwhitelist=opt.maskRUs.split(',') if len(opt.maskRUs) else []
+	if ruwhitelist:
+		opt.nRUs = len(ruwhitelist)
+
 	buwhitelist=opt.maskBUs.split(',') if len(opt.maskBUs) else []
 	if buwhitelist:
 		opt.nBUs = len(buwhitelist)
@@ -101,6 +110,7 @@ if __name__ == "__main__":
 	configurator.disablePauseFrame = opt.disablePauseFrame
 	configurator.setCorrelatedSeed = opt.setCorrelatedSeed
 	configurator.setCWND = opt.setCWND ## -1 doesn't do anything
+	configurator.nrus = opt.nRUs
 	configurator.nbus = opt.nBUs
 	configurator.evbns = ('gevb2g' if opt.useGevb2g and not
 			                          opt.useEvB else 'evb')
@@ -108,6 +118,7 @@ if __name__ == "__main__":
 			                          opt.useIBV else 'ibv')
 
 	configurator.dropAtRU = opt.dropAtRU
+	configurator.localInput = opt.localInput
 
 	fedbuilders = daq2HWInfo.ge_switch_cabling.keys()
 	configurator.makeConfigs(fedbuilders)
@@ -136,7 +147,10 @@ if __name__ == "__main__":
 			writeEntry(outfile, 'FEROLCONTROLLER', frl.frlpc, frl.index)
 		outfile.write('\n')
 
-		for ru in configurator.allRUs:
+		allrus = configurator.allRUs
+		if opt.nRUs > len(allrus):
+			raise RuntimeError("Not enough RUs in inventory: only found "+str(len(allrus)))
+		for ru in allrus:
 			writeEntry(outfile, 'RU', ru.hostname, ru.index, addFRLHN=True)
 		outfile.write('\n')
 
