@@ -874,6 +874,7 @@ class daq2Control(object):
 				sleep(5, self.options.verbose, self.options.dry)
 
 			self.sendCmdToFEROLs('Configure')
+			sleep(5, self.options.verbose, self.options.dry)
 			self.sendCmdToEVMRUBU('Configure')
 
 			## Configure GTPe and FMM:
