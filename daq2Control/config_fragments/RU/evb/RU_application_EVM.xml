@@ -1,6 +1,6 @@
 <xc:Application class="evb::EVM" id="43" instance="0" network="infini" xmlns:xc="http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/">
 	<properties xmlns="urn:xdaq-application:evb::EVM" xsi:type="soapenc:Struct">
-		<inputSource xsi:type="xsd:string">FEROL</inputSource>
+		<inputSource xsi:type="xsd:string">Socket</inputSource>
 		<dropInputData xsi:type="xsd:boolean">false</dropInputData>
                 <fakeLumiSectionDuration xsi:type="xsd:unsignedInt">23</fakeLumiSectionDuration>
 		<blockSize xsi:type="xsd:unsignedInt">8192</blockSize>
@@ -9,10 +9,18 @@
 		<numberOfResponders xsi:type="xsd:unsignedInt">2</numberOfResponders>
 		<numberOfAllocators xsi:type="xsd:unsignedInt">2</numberOfAllocators>
 		<maxTriggerRate xsi:type="xsd:unsignedInt">0</maxTriggerRate>
-		<fragmentFIFOCapacity xsi:type="xsd:unsignedInt">256</fragmentFIFOCapacity>
+		<socketBufferFIFOCapacity xsi:type="xsd:unsignedInt">128</socketBufferFIFOCapacity>
+		<fragmentFIFOCapacity xsi:type="xsd:unsignedInt">512</fragmentFIFOCapacity>
 		<fragmentRequestFIFOCapacity xsi:type="xsd:unsignedInt">1500</fragmentRequestFIFOCapacity>
 		<fedSourceIds soapenc:arrayType="xsd:ur-type[%d]" xsi:type="soapenc:Array">
 			<item soapenc:position="[0]" xsi:type="xsd:unsignedInt">0</item>
 		</fedSourceIds>
+		<ferolSources soapenc:arrayType="xsd:ur-type[%d]" xsi:type="soapenc:Array">
+			<item soapenc:position="[0]" xsi:type="soapenc:Struct">
+                        	<fedId xsi:type="xsd:unsignedInt">0</fedId>
+                        	<hostname xsi:type="xsd:string">""</hostname>
+                        	<port xsi:type="xsd:unsignedInt">0</port>
+                        </item>
+		</ferolSources>
 	</properties>
 </xc:Application>

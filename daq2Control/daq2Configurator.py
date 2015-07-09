@@ -823,35 +823,10 @@ class daq2Configurator(object):
 		module.text = "$XDAQ_ROOT/lib/libpt%s.so"%self.ptprot
 		ru_context.insert(5,module)
 
-		## Add frl routing
-		feds_to_add = ru.getFedIds()
-		pt_frl_ns = self.xdaqappns%"pt::frl::Application"
-		frl_routing_element = ru_context.find(
-			    QN(self.xdaqns,'Application').text +'/'+
-			    QN(pt_frl_ns,'properties').text +'/'+
-			    QN(pt_frl_ns,'frlRouting').text)
-		frl_routing_element.attrib[QN(self.soapencns, 'arrayType').text] = (
-			    "xsd:ur-type[%d]"%(len(feds_to_add)))
-		item_element = elementFromFile(self.fragmentdir+
-			                           '/RU/RU_frl_routing.xml')
-		classname_to_add = ("%s::EVM"%self.evbns if
-			                isEVM and self.evbns == 'evb' else
-			                "%s::RU"%self.evbns)
-		item_element.find(QN(pt_frl_ns,'className').text).text = (
-			                                             classname_to_add)
-		item_element.find(QN(pt_frl_ns,'instance').text).text = (
-			                                             "%d"%ru.index)
-
-		for n,fed in enumerate(feds_to_add):
-			item_to_add = deepcopy(item_element)
-			item_to_add.attrib[QN(self.soapencns, 'position').text] = (
-				                                                '[%d]'%n)
-			item_to_add.find(QN(pt_frl_ns,'fedid').text).text = str(fed)
-			frl_routing_element.append(item_to_add)
-
 		## RU application
 		ru_app = elementFromFile(filename=self.fragmentdir+
 			                     '/RU/%s/RU_application.xml'%self.evbns)
+		feds_to_add = ru.getFedIds()
 
 		## make the first one an EVM in case of EvB
 		if self.evbns == 'evb' and isEVM:
@@ -883,6 +858,27 @@ class daq2Configurator(object):
 					                                                '[%d]'%n)
 				item_to_add.text = str(fed)
 				fedSourceIds.append(item_to_add)
+			ferolSources = ru_app.find(QN(ruevbappns, 'properties').text+'/'+
+				                       QN(ruevbappns, 'ferolSources').text)
+			ferolSources.attrib[QN(self.soapencns, 'arrayType').text] = (
+				                       "xsd:ur-type[%d]"%(len(feds_to_add)))
+			item_element = ferolSources.find(QN(ruevbappns,'item').text)
+			ferolSources.remove(item_element)
+			pos = 0
+			for frl in ru.frls:
+				for fed in frl.fedIds:
+					item_to_add = deepcopy(item_element)
+					item_to_add.attrib[QN(self.soapencns, 'position').text] = (
+					                                                '[%d]'%pos)
+					item_to_add.find(QN(ruevbappns,'fedId').text).text = str(fed)
+					item_to_add.find(QN(ruevbappns,'hostname').text).text = str(frl.sourceIp)
+					if frl.nstreams==1 and (frl.index+1)%2==0:
+						port = '60800'
+					else:
+						port = 'RU%d_FRL_PORT'%ru.index
+					item_to_add.find(QN(ruevbappns,'port').text).text = port
+					ferolSources.append(item_to_add)
+					pos += 1
 
 		## Add libdat2 module in case of udapl
 		if self.ptprot == 'udapl':
