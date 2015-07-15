@@ -872,10 +872,16 @@ class daq2Configurator(object):
 					                                                '[%d]'%pos)
 					item_to_add.find(QN(ruevbappns,'fedId').text).text = str(fed)
 					item_to_add.find(QN(ruevbappns,'hostname').text).text = str(frl.sourceIp)
-					if frl.nstreams==1 and (frl.index+1)%2==0:
-						port = '60800'
+					if frl.nstreams==1:
+						if (frl.index)%2==0:
+							port = 'RU%d_FRL_PORT'%ru.index
+						else:
+							port = '60800'
 					else:
-						port = 'RU%d_FRL_PORT'%ru.index
+						if pos%2 == 0:
+							port = 'RU%d_FRL_PORT'%ru.index
+						else:
+							port = '60800'
 					item_to_add.find(QN(ruevbappns,'port').text).text = port
 					ferolSources.append(item_to_add)
 					pos += 1
