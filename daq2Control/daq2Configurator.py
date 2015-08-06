@@ -867,6 +867,7 @@ class daq2Configurator(object):
 			pos = 0
 			for frl in ru.frls:
 				for fed in frl.fedIds:
+					if not fed: continue
 					item_to_add = deepcopy(item_element)
 					item_to_add.attrib[QN(self.soapencns, 'position').text] = (
 					                                                '[%d]'%pos)

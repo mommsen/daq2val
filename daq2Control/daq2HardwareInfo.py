@@ -25,7 +25,7 @@ class FEROL(object):
 		self.system = system
 		self.crate  = crate
 		self.switch = switch
-		self.sourceIp = None
+		self.sourceIp = 'ferol-%s-%02d.fbs0v0.cms'%(crate,slot)
 		self.nstreams = 0
 
 		fed1, fed2 = fedIds
@@ -251,14 +251,15 @@ class daq2HardwareInfo(object):
 				yield bunch
 	def getAllRUs(self, switch):
 		return [ru for ru in self.ge_switch_cabling[switch]
-		                            if ru.startswith('ru-')]
+		                            if ru.startswith('ru-')
+                                    and ru in [r for rulist in self.ru_inventory.values()
+		                            for r in rulist] ]
 	def getRUs(self, switch):
 		"""
 		Return a RU on the same ETH switch as the frlpc,
 		as long as there are any
 		"""
-		allrus = [ru for ru in self.ge_switch_cabling[switch]
-		                            if ru.startswith('ru-')]
+		allrus = getAllRUs(switch)
 		for ru in cycle(allrus):
 			yield ru
 	def getAllBUs(self, switch=None):
