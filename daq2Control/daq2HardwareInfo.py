@@ -60,7 +60,7 @@ class daq2HardwareInfo(object):
  - Takes the information from two .csv files (provided by Andre Holzner)
 ---------------------------------------------------------------------
 '''
-	def __init__(self, gecabling="2015-04-01-ru-network.csv",
+	def __init__(self, gecabling="2015-08-05-ru-network.csv",
 		         ibcabling="2015-05-05-infiniband-ports.csv",
 		         geswitchmask=[], ibswitchmask=[],
 		         fedwhitelist=[], ruwhitelist=[], buwhitelist=[],
